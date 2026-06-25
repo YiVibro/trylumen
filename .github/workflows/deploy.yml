@@ -20,7 +20,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd /home/ubuntu/insightstream
+            cd /home/trylumen
 
             # Pull latest code
             git pull origin main
@@ -40,4 +40,4 @@ jobs:
             docker compose build --no-cache
             docker compose up -d
 
-            echo "✅ Deployment complete"
+            echo "Deployment complete"
