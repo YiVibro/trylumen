@@ -20,7 +20,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd /home/trylumen
+            cd /home/ubuntu/home/trylumen
 
             # Pull latest code
             git pull origin main
