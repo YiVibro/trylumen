@@ -13,7 +13,7 @@ export const generateAnswer = async (question) => {
     const queryEmbedding = await getEmbedding(question);
 
     // Retrieve relevant context from Supabase
-    const contextChunks = await searchSimilarChunks(queryEmbedding, 0.0, 5);
+    const contextChunks = await searchSimilarChunks(question,queryEmbedding, 5);
 
     if (!contextChunks || contextChunks.length === 0) {
       return {

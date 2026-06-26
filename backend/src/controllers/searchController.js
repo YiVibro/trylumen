@@ -14,7 +14,7 @@ const query = async (req, res) => {
     const queryEmbedding = await getEmbedding(query);
 
     // Search similar chunks
-    const sources = await searchSimilarChunks(queryEmbedding, 5);
+    const sources = await searchSimilarChunks(query,queryEmbedding, 5,documentIds);
 
     if (!sources || sources.length === 0) {
       return res.json({

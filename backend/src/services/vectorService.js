@@ -19,11 +19,13 @@ const storeChunks = async (documentId, embeddedChunks) => {
 };
 
 // Search for similar chunks using cosine similarity
-const searchSimilarChunks = async (queryEmbedding, topK = 5) => {
-  const { data, error } = await supabase.rpc('match_chunks', {
+const searchSimilarChunks = async (queryText,queryEmbedding, topK = 5,documentIds=[]) => {
+  console.log('documentIds:', documentIds);
+  const { data, error } = await supabase.rpc('hybrid_search', {
+    query_text: queryText,
     query_embedding: queryEmbedding,
-    match_threshold: 0.3, 
     match_count: topK,
+    filter_document_ids: documentIds.length > 0 ? documentIds : null
   });
 
   if (error) throw new Error(`Search failed: ${error.message}`);
