@@ -39,9 +39,9 @@ export default function Login(){
         {/* Logo */}
         <div className="flex items-center gap-3 mb-8">
           <div className="bg-blue-600 p-2 rounded-lg">
-            <Brain className="text-white" size={24} />
+            {/* <Brain className="text-white" size={24} /> */}
           </div>
-          <h1 className="text-white text-2xl font-bold">InsightStream</h1>
+          <h1 className="text-white text-2xl font-bold">TryLumen</h1>
         </div>
 
         <h2 className="text-gray-300 text-lg mb-6">
