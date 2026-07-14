@@ -85,12 +85,27 @@ export const uploadDocument = (formData, onProgress) =>
       if (onProgress) onProgress(Math.round((e.loaded * 100) / e.total));
     },
   });
+export const requestUpload = (filename, mimeType, fileSize) =>
+  api.post('/documents/upload/request', { filename, mimeType, fileSize });
+
+export const confirmUpload = (documentId, s3Key) =>
+  api.post('/documents/upload/confirm', { documentId, s3Key });
+
+// Direct S3 upload using presigned URL
+export const uploadToS3 = async (presignedUrl, file, onProgress) => {
+  return axios.put(presignedUrl, file, {
+    headers: { 'Content-Type': file.type },
+    onUploadProgress: (e) => {
+      if (onProgress) onProgress(Math.round((e.loaded * 100) / e.total));
+    }
+  });
+};
 
 export const getDocuments = () => api.get('/documents');
 
 export const deleteDocument = (id) => api.delete(`/documents/${id}`);
 
-export const sendMessage = (query, documentIds) =>
-  api.post('/search/query', { query, documentIds });
+export const sendMessage = (query, documentIds,history=[]) =>
+  api.post('/search/query', { query, documentIds, history });
 
 export default api;

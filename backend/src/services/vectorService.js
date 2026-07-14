@@ -20,7 +20,7 @@ const storeChunks = async (documentId, embeddedChunks) => {
 
 // Search for similar chunks using cosine similarity
 const searchSimilarChunks = async (queryText,queryEmbedding, topK = 5,documentIds=[]) => {
-  console.log('documentIds:', documentIds);
+
   const { data, error } = await supabase.rpc('hybrid_search', {
     query_text: queryText,
     query_embedding: queryEmbedding,
@@ -32,10 +32,10 @@ const searchSimilarChunks = async (queryText,queryEmbedding, topK = 5,documentId
   return data || [];
 };
 
-const createDocument = async (filename, s3Key) => {
+const createDocument = async (filename, s3Key, userId, status='pending') => {
   const { data, error } = await supabase
     .from('documents')
-    .insert({ filename, s3_key: s3Key })
+    .insert({ filename, s3_key: s3Key, uploaded_by: userId, status })
     .select()
     .single();
 

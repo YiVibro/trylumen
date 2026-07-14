@@ -20,7 +20,7 @@ export default function Login(){
             const fn = isRegister ? register : login;
             const {data} = await fn(email,password);
 
-            loginUser(data.token, data.role);
+            loginUser(data.accessToken, data.user.role,data.user.email);
         }catch(err){
           console.log('bla bla')
            console.error('Login error:', err.response?.data);

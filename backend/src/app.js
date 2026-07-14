@@ -9,14 +9,20 @@ const searchRoutes=require('./routes/search');
 
 const app=express();
 
-if(process.env.NODE_ENV==='production'){
+// if(process.env.NODE_ENV==='development'){
+// app.use(cors({
+//   origin: '*',
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization'],
+//   credentials: false, 
+// }));
+// }
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: false, 
 }));
-}
 
 app.use(express.json());
 app.use(cookieParser());
@@ -25,7 +31,7 @@ app.use('/api/documents',documentRoutes);
 app.use('/api/search',searchRoutes);
 
 app.get('/api/health',(req,res)=>{
-    res.json({status:'ok',message:'InsightStream API running'});
+    res.json({status:'ok',message:'trylumen API running'});
 });
 
 module.exports = app;

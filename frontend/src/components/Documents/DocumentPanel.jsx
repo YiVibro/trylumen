@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useAuth } from '../../context/AuthContext';
-import { getDocuments, uploadDocument, deleteDocument } from '../../services/api';
+import { getDocuments, uploadDocument, deleteDocument, requestUpload, uploadToS3,confirmUpload } from '../../services/api';
 import { FileText, Upload, Trash2, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 import { io } from 'socket.io-client';
 
@@ -39,15 +39,32 @@ export default function DocumentPanel({ selectedDocs, setSelectedDocs }) {
     const file = acceptedFiles[0];
     if (!file) return;
 
-    const formData = new FormData();
-    formData.append('file', file);
+    // const formData = new FormData();
+    // formData.append('file', file);
 
     setUploading(true);
     setUploadProgress(0);
 
     try {
-      await uploadDocument(formData, setUploadProgress);
-      await fetchDocuments();
+      // await uploadDocument(formData, setUploadProgress);
+      // await fetchDocuments();
+          // Step 1: Get presigned URL from backend
+    const { data } = await requestUpload(
+      file.name, 
+      file.type, 
+      file.size
+    );
+
+     const { presignedUrl, s3Key, documentId } = data;
+
+      // Step 2: Upload directly to S3 — backend never touches the file
+    await uploadToS3(presignedUrl, file, setUploadProgress);
+
+    // Step 3: Tell backend upload is done — triggers validation + processing
+    await confirmUpload(documentId, s3Key);
+
+    await fetchDocuments();
+    
     } catch (err) {
       console.error('Upload failed:', err);
     } finally {

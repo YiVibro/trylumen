@@ -19,7 +19,7 @@ export default function ChatWindow({ selectedDocs, setActiveSources }) {
     setLoading(true);
 
     try {
-      const { data } = await sendMessage(query, selectedDocs);
+      const { data } = await sendMessage(query, selectedDocs,messages);
       const aiMessage = {
         role: 'assistant',
         content: data.answer,

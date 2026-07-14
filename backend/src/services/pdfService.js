@@ -1,24 +1,46 @@
-const fs = require('fs');
-const path = require('path');
+// backend/src/services/pdfService.js
 
-const extractText = async (filePath)=>{
+// We removed fs and path entirely — no server disk interaction!
+const extractText = async (fileBuffer) => {
+  const SmartParser = require('pdf-parse-new/lib/SmartPDFParser');
+  const parser = new SmartParser();
 
-    const SmartParser = require('pdf-parse-new/lib/SmartPDFParser');
+  try {
+    // Pass the S3 buffer directly to the parser!
+    const result = await parser.parse(fileBuffer);
 
-    const parser = new SmartParser();
-
-      const pdfPath=filePath;
-    try {
-            const dataBuffer = fs.readFileSync(pdfPath);
-            
-            const result = await parser.parse(dataBuffer);
-
-            return {
-                text:result.text,
-            }
-    }catch (error) {
-        console.error('Extraction Error:', error);
-    }
-}
+    return {
+      text: result.text,
+    };
+  } catch (error) {
+    console.error('Extraction Error:', error);
+    throw error; // Throw so the background worker catch block can mark it as 'failed'
+  }
+};
 
 module.exports = { extractText };
+
+// const fs = require('fs');
+// const path = require('path');
+
+// const extractText = async (filePath)=>{
+
+//     const SmartParser = require('pdf-parse-new/lib/SmartPDFParser');
+
+//     const parser = new SmartParser();
+
+//       const pdfPath=filePath;
+//     try {
+//             const dataBuffer = fs.readFileSync(pdfPath);
+            
+//             const result = await parser.parse(dataBuffer);
+
+//             return {
+//                 text:result.text,
+//             }
+//     }catch (error) {
+//         console.error('Extraction Error:', error);
+//     }
+// }
+
+// module.exports = { extractText };

@@ -48,7 +48,11 @@ const register = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
-    res.json({ token: accessToken, role: user.role, email: user.email });
+    //res.json({ token: accessToken, role: user.role, email: user.email });
+    res.json({ 
+    accessToken, 
+    user: { id: user.id, role: user.role, email: user.email } 
+  });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -81,7 +85,11 @@ const login = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
-    res.json({ token: accessToken, role: user.role, email: user.email });
+    //res.json({ token: accessToken, role: user.role, email: user.email });
+    res.json({ 
+    accessToken, 
+    user: { id: user.id, role: user.role, email: user.email } 
+  });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -110,7 +118,9 @@ const refresh = async (req, res) => {
     }
 
     const { accessToken } = generateTokens(user);
-    res.json({ accessToken });
+    res.json({ accessToken ,
+      user:{ id: user.id, role: user.role, email: user.email }
+    });
   } catch (err) {
     res.status(401).json({ message: 'Invalid refresh token' });
   }
