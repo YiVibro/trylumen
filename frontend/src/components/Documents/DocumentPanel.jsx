@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useAuth } from '../../context/AuthContext';
-import { getDocuments, uploadDocument, deleteDocument, requestUpload, uploadToS3,confirmUpload } from '../../services/api';
+import { getDocuments, uploadDocument, deleteDocument, requestUpload, uploadToS3,confirmUpload,handleDelete } from '../../services/api';
 import { FileText, Upload, Trash2, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 import { io } from 'socket.io-client';
 
@@ -166,7 +166,21 @@ export default function DocumentPanel({ selectedDocs, setSelectedDocs }) {
             >
               <FileText size={16} className="text-blue-400 shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-white text-xs font-medium truncate">{doc.filename}</p>
+                {/* <p className="text-white text-xs font-medium truncate">{doc.filename}</p> */}
+              
+    <div className="flex justify-between items-center p-2 ">
+  <p className="text-white text-xs font-medium truncate">{doc.filename}</p>
+  
+  <button 
+    onClick={() => handleDelete(doc.id)}
+    className="text-red-500 hover:text-red-700 p-1"
+    title="Delete document"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  </button>
+</div>
                 <div className="flex items-center gap-1 mt-0.5">
                   {getStatusIcon(doc)}
                   <span className="text-gray-500 text-xs capitalize">

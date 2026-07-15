@@ -108,4 +108,20 @@ export const deleteDocument = (id) => api.delete(`/documents/${id}`);
 export const sendMessage = (query, documentIds,history=[]) =>
   api.post('/search/query', { query, documentIds, history });
 
+export const handleDelete = async (documentId) => {
+  if (!window.confirm("Are you sure you want to delete this document? All related chat contexts will be detached.")) return;
+
+  try {
+  
+    await api.delete(`/documents/${documentId}`);
+    
+    setDocuments(prevDocs => prevDocs.filter(doc => doc.id !== documentId));
+    
+    alert("Document deleted successfully!");
+  } catch (error) {
+    console.error("Failed to delete document:", error);
+    alert("Error deleting file.");
+  }
+};
+
 export default api;

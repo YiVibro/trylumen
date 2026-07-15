@@ -22,7 +22,6 @@ export default function Login(){
 
             loginUser(data.accessToken, data.user.role,data.user.email);
         }catch(err){
-          console.log('bla bla')
            console.error('Login error:', err.response?.data);
            if(err.status === 401){
                setLoading(false); 

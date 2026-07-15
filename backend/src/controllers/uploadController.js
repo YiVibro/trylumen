@@ -1,7 +1,6 @@
 const { generateUploadUrl } = require('../services/storageService');
 const { validateFileBuffer, isAllowedType } = require('../utils/validateFile');
 const { createDocument, processDocument } = require('./documentController');
-// ^^^ import processDocument from where it actually lives
 const { GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const s3 = require('../config/s3');
 const supabase = require('../config/supabase');
@@ -82,12 +81,8 @@ const confirmUpload = async (req, res) => {
       return res.status(400).json({ message: 'File content invalid. Upload rejected.' });
     }
 
-    // Send response FIRST, then process asynchronously
-    // This fixes the "headers already sent" error
     res.json({ message: 'Upload confirmed. Processing started.' });
-
-    // processDocument runs AFTER response is sent
-    // errors here go to logs, not to client
+    // errors here go to logs
     processDocument(documentId, s3Key, detectedType, req.user.id)
       .catch(err => console.error('Background processing failed:', err));
 

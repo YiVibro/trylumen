@@ -10,6 +10,6 @@ const router = express.Router();
 router.post('/upload/request', authMiddleware, requestUpload);
 router.post('/upload/confirm', authMiddleware, confirmUpload);
 router.get('/', authMiddleware, listDocuments);
-router.delete('/:id', authMiddleware, rbacMiddleware('admin'), removeDocument);
+router.delete('/:id', authMiddleware, removeDocument);//, rbacMiddleware('admin'),
 
 module.exports = router;
