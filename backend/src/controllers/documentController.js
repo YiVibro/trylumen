@@ -1,4 +1,4 @@
-const { extractText } = require('../services/pdfService');
+const { extractTextFromBuffer } = require('../services/pdfService');
 const { chunkText } = require('../services/chunkService');
 const { getEmbeddingsBatch } = require('../services/embeddingService');
 const { createDocument, storeChunks, getAllDocuments } = require('../services/vectorService');
@@ -30,14 +30,16 @@ const processDocument = async (documentId, s3Key, detectedType, userId) => {
     const fileBuffer = Buffer.concat(chunksBuffer);
     emitProgress(documentId, 20);
 
-    // 2. Pass the S3 buffer directly to your updated pdfService
-    let text = '';
-    if (detectedType === 'pdf') {
-      const result = await extractText(fileBuffer); // 👈 Passes the memory buffer directly
-      text = result?.text || '';
-    } else {
-      text = fileBuffer.toString('utf-8');
-    }
+    // 2. Pass the S3 buffer directly 
+    // let text = '';
+    // if (detectedType === 'pdf') {
+    //   const result = await extractTextFromBuffer(fileBuffer, detectedType);
+    //   text = result?.text || '';
+    // } else {
+    //   text = fileBuffer.toString('utf-8');
+    // }
+    
+    const { text } = await extractTextFromBuffer(fileBuffer, detectedType);
 
     emitProgress(documentId, 30);
 

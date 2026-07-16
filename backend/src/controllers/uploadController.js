@@ -18,7 +18,9 @@ const requestUpload = async (req, res) => {
     'image/png',
     'image/jpeg',
     'audio/mpeg',
-    'audio/mp4'
+    'audio/mp4',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain', 
   ];
 
   if (!allowedMimes.includes(mimeType)) {
