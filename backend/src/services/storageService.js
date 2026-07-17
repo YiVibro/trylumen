@@ -43,7 +43,7 @@ const generateUploadUrl = async (filename, mimeType, userId) => {
   //   }
   // });
 
-  return { presignedUrl:url, fields,s3Key: safeKey };
+  return { presignedUrl,s3Key: safeKey };
 };
 
 // Generate signed download URL — never expose S3 directly
