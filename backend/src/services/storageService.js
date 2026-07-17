@@ -13,35 +13,35 @@ const generateUploadUrl = async (filename, mimeType, userId) => {
   const ext = getExtFromMime(mimeType);
   const safeKey = `uploads/${userId}/${uuidv4()}.${ext}`;
 
-  // const command = new PutObjectCommand({
-  //   Bucket: BUCKET,
-  //   Key: safeKey,
-  //   ContentType: mimeType,
-  //   // Metadata stored with the file
-  //   Metadata: {
-  //     userId,
-  //     originalName: Buffer.from(filename).toString('base64'), // encode safely
-  //     uploadedAt: new Date().toISOString()
-  //   }
-  // });
-
-  // // URL expires in 5 minutes — client must upload within this window
-  // const presignedUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
-
-  //added later
-  const { url, fields } = await createPresignedPost(s3, {
+  const command = new PutObjectCommand({
     Bucket: BUCKET,
     Key: safeKey,
-    Expires: 300, // Link stays alive for exactly 5 minutes
-    Conditions: [
-      ['content-length-range', 0, 52428800], // 🛡️ Gateway Constraint: File size MUST be between 0 bytes and 50MB
-      {'content-type': mimeType}
-    ],
-    Fields: {
-      'x-amz-meta-userid': userId,
-      'x-amz-meta-originalname': Buffer.from(filename).toString('base64') // Safe metadata mapping
+    ContentType: mimeType,
+    // Metadata stored with the file
+    Metadata: {
+      userId,
+      originalName: Buffer.from(filename).toString('base64'), // encode safely
+      uploadedAt: new Date().toISOString()
     }
   });
+
+  // URL expires in 5 minutes — client must upload within this window
+  const presignedUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
+
+  //added later
+  // const { url, fields } = await createPresignedPost(s3, {
+  //   Bucket: BUCKET,
+  //   Key: safeKey,
+  //   Expires: 300, // Link stays alive for exactly 5 minutes
+  //   Conditions: [
+  //     ['content-length-range', 0, 52428800], // 🛡️ Gateway Constraint: File size MUST be between 0 bytes and 50MB
+  //     {'content-type': mimeType}
+  //   ],
+  //   Fields: {
+  //     'x-amz-meta-userid': userId,
+  //     'x-amz-meta-originalname': Buffer.from(filename).toString('base64') // Safe metadata mapping
+  //   }
+  // });
 
   return { presignedUrl:url, fields,s3Key: safeKey };
 };
