@@ -87,7 +87,7 @@ const processDocument = async (documentId, s3Key, detectedType, userId) => {
 
 const listDocuments = async (req, res) => {
   try {
-    const documents = await getAllDocuments();
+    const documents = await getAllDocuments(req.user.id);
     res.json(documents);
   } catch (err) {
     res.status(500).json({ message: err.message });
