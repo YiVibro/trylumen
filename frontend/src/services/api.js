@@ -37,7 +37,40 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // if (error.response?.status === 401 && originalRequest.url?.includes('/auth/refresh')) {
+    //   if (isRefreshing) {
+    //     return new Promise((resolve, reject) => {
+    //       failedQueue.push({ resolve, reject });
+    //     }).then(token => {
+    //       originalRequest.headers.Authorization = `Bearer ${token}`;
+    //       return api(originalRequest);
+    //     });
+    //   }
+
+    //   originalRequest._retry = true;
+    //   isRefreshing = true;
+    if (error.response?.status === 401 && originalRequest.url?.includes('/auth/refresh')) {
+      console.warn("Refresh token expired. Evicting session.");
+      currentAccessToken = null;
+      failedQueue = []; 
+      isRefreshing = false;
+      
+      // ONLY redirect if we aren't already on the login page to avoid page reload loops
+      if (window.location.pathname !== '/') {
+        window.location.href = '/'; 
+      }
+      return Promise.reject(error);
+    }
+
+    // 2. Standard 401 handling for normal protected routes
     if (error.response?.status === 401 && !originalRequest._retry) {
+      
+      // If we don't even have a token/session setup function registered yet, don't try to refresh
+      if (!refreshTokenFn) {
+        if (window.location.pathname !== '/') window.location.href = '/';
+        return Promise.reject(error);
+      }
+
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -49,6 +82,7 @@ api.interceptors.response.use(
 
       originalRequest._retry = true;
       isRefreshing = true;
+      //here
 
       try {
         const newToken = await refreshTokenFn?.();
@@ -61,7 +95,9 @@ api.interceptors.response.use(
       } catch (err) {
         processQueue(err, null);
         currentAccessToken = null;
-        window.location.href = '/';
+       // window.location.href = '/';
+        isRefreshing = false;
+        if (window.location.pathname !== '/') window.location.href = '/';
         return Promise.reject(err);
       } finally {
         isRefreshing = false;
