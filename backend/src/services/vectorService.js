@@ -43,10 +43,11 @@ const createDocument = async (filename, s3Key, userId, status='pending') => {
   return data;
 };
 
-const getAllDocuments = async () => {
+const getAllDocuments = async (userId) => {
   const { data, error } = await supabase
     .from('documents')
     .select('*')
+    .eq('uploaded_by',userId)
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);
