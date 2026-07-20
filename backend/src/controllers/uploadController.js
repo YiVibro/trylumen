@@ -2,6 +2,7 @@ const { generateUploadUrl } = require('../services/storageService');
 const { validateFileBuffer, isAllowedType } = require('../utils/validateFile');
 const { createDocument, processDocument } = require('./documentController');
 const { GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { documentQueue } = require('../queues/documentQueue');
 const s3 = require('../config/s3');
 const supabase = require('../config/supabase');
 
@@ -85,9 +86,22 @@ const confirmUpload = async (req, res) => {
 
     res.json({ message: 'Upload confirmed. Processing started.' });
     // errors here go to logs
-    processDocument(documentId, s3Key, detectedType, req.user.id)
-      .catch(err => console.error('Background processing failed:', err));
+    // processDocument(documentId, s3Key, detectedType, req.user.id)
+    //   .catch(err => console.error('Background processing failed:', err));
 
+//added
+    await documentQueue.add('process-pdf', {
+    documentId,
+    s3Key,
+    detectedType,
+    userId: req.user.id
+  }, {
+    attempts: 3, // Retry automatically up to 3 times if AWS or Gemini fails
+    backoff: 5000 // Wait 5s before retrying
+  });
+
+  // 2. Respond immediately to the frontend
+  return res.json({ message: 'Document added to processing queue.' });
   } catch (err) {
     console.error('Error inside confirmUpload:', err);
     // Only send error if headers not already sent
