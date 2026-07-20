@@ -10,8 +10,7 @@ TryLumen is a multi-tenant Document Intelligence system. Upload PDFs, Word docs,
 
 The whole system is split into small, focused pieces instead of one giant server. That's what lets it run comfortably on something as small as an AWS EC2 t2.micro (1GB RAM) without falling over.
 
-![image]()
-
+![image]("image url")
 Why it's set up this way:
 - **Frontend** — a dashboard to manage your files, plus a chat window that shows live progress while a document is being processed (via websockets).
 - **Nginx** — sits in front of everything, routes traffic, and serves static assets.
