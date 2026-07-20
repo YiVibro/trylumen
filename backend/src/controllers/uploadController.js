@@ -1,10 +1,6 @@
 const { generateUploadUrl } = require('../services/storageService');
-const { validateFileBuffer, isAllowedType } = require('../utils/validateFile');
-const { createDocument, processDocument } = require('./documentController');
-const { GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
-const { documentQueue } = require('../queues/documentQueue');
-const s3 = require('../config/s3');
-const supabase = require('../config/supabase');
+const { createDocument } = require('../services/vectorService');
+const { v4: uuidv4 } = require('uuid');
 
 const requestUpload = async (req, res) => {
   const { filename, mimeType, fileSize } = req.body;
@@ -14,33 +10,33 @@ const requestUpload = async (req, res) => {
     return res.status(400).json({ message: 'File too large. Maximum 50MB allowed.' });
   }
 
-  const allowedMimes = [
-    'application/pdf',
-    'image/png',
-    'image/jpeg',
-    'audio/mpeg',
-    'audio/mp4',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'text/plain', 
-  ];
-
+  const allowedMimes = ['application/pdf'];
   if (!allowedMimes.includes(mimeType)) {
-    return res.status(400).json({ message: 'File type not allowed' });
+    return res.status(400).json({ message: 'Only native PDF file formats are supported.' });
   }
 
   try {
-    const { presignedUrl, s3Key } = await generateUploadUrl(
+    // 1. Generate document UUID on the application thread
+    const documentId = uuidv4();
+
+    // 2. Generate S3 presigned post payload bound to that document ID
+    const { presignedUrl, fields, s3Key } = await generateUploadUrl(
       filename,
       mimeType,
-      req.user.id
+      req.user.id,
+      documentId
     );
 
-    const doc = await createDocument(filename, s3Key, req.user.id, 'pending');
+    // 3. Create document record initialized to 'processing'
+    // Total segments initialize at 0; updated dynamically by the Orchestrator Lambda later
+    await createDocument(filename, s3Key, req.user.id, 'processing', documentId);
 
+    // 4. Return variables straight to React frontend upload mechanisms
     res.json({
       presignedUrl,
+      fields,
       s3Key,
-      documentId: doc.id
+      documentId
     });
   } catch (err) {
     console.error('Error inside requestUpload:', err);
@@ -48,70 +44,123 @@ const requestUpload = async (req, res) => {
   }
 };
 
-const confirmUpload = async (req, res) => {
-  const { documentId, s3Key } = req.body;
+module.exports = { requestUpload };
 
-  try {
-    // Fetch first 16 bytes only for magic bytes check
-    const command = new GetObjectCommand({
-      Bucket: process.env.AWS_S3_BUCKET,
-      Key: s3Key,
-      Range: 'bytes=0-15'
-    });
 
-    const response = await s3.send(command);
-    const chunks = [];
-    for await (const chunk of response.Body) {
-      chunks.push(chunk);
-    }
-    const headerBuffer = Buffer.concat(chunks);
+// const { generateUploadUrl } = require('../services/storageService');
+// const { validateFileBuffer, isAllowedType } = require('../utils/validateFile');
+// const { createDocument, processDocument } = require('./documentController');
+// const { GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+// const { documentQueue } = require('../queues/documentQueue');
+// const s3 = require('../config/s3');
+// const supabase = require('../config/supabase');
 
-    // Validate magic bytes
-    const { valid, detectedType } = validateFileBuffer(headerBuffer);
+// const requestUpload = async (req, res) => {
+//   const { filename, mimeType, fileSize } = req.body;
 
-    if (!valid || !isAllowedType(detectedType)) {
-      // Delete invalid file from S3
-      await s3.send(new DeleteObjectCommand({
-        Bucket: process.env.AWS_S3_BUCKET,
-        Key: s3Key
-      }));
+//   const MAX_SIZE = 50 * 1024 * 1024;
+//   if (fileSize > MAX_SIZE) {
+//     return res.status(400).json({ message: 'File too large. Maximum 50MB allowed.' });
+//   }
 
-      await supabase
-        .from('documents')
-        .update({ status: 'failed', error_message: 'Invalid file content' })
-        .eq('id', documentId);
+//   const allowedMimes = [
+//     'application/pdf',
+//     'image/png',
+//     'image/jpeg',
+//     'audio/mpeg',
+//     'audio/mp4',
+//     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+//     'text/plain', 
+//   ];
 
-      return res.status(400).json({ message: 'File content invalid. Upload rejected.' });
-    }
+//   if (!allowedMimes.includes(mimeType)) {
+//     return res.status(400).json({ message: 'File type not allowed' });
+//   }
 
-    res.json({ message: 'Upload confirmed. Processing started.' });
-    // errors here go to logs
-    // processDocument(documentId, s3Key, detectedType, req.user.id)
-    //   .catch(err => console.error('Background processing failed:', err));
+//   try {
+//     const { presignedUrl, s3Key } = await generateUploadUrl(
+//       filename,
+//       mimeType,
+//       req.user.id
+//     );
 
-//added
-    await documentQueue.add('process-pdf', {
-    documentId,
-    s3Key,
-    detectedType,
-    userId: req.user.id
-  }, {
-    attempts: 3, // Retry automatically up to 3 times if AWS or Gemini fails
-    backoff: 5000 // Wait 5s before retrying
-  });
+//     const doc = await createDocument(filename, s3Key, req.user.id, 'pending');
 
-  // 2. Respond immediately to the frontend
-  return res.json({ message: 'Document added to processing queue.' });
-  } catch (err) {
-    console.error('Error inside confirmUpload:', err);
-    // Only send error if headers not already sent
-    if (!res.headersSent) {
-      res.status(500).json({ message: err.message });
-    }
-  }
-};
+//     res.json({
+//       presignedUrl,
+//       s3Key,
+//       documentId: doc.id
+//     });
+//   } catch (err) {
+//     console.error('Error inside requestUpload:', err);
+//     res.status(500).json({ message: err.message });
+//   }
+// };
 
-module.exports = { requestUpload, confirmUpload };
+// const confirmUpload = async (req, res) => {
+//   const { documentId, s3Key } = req.body;
+
+//   try {
+//     // Fetch first 16 bytes only for magic bytes check
+//     const command = new GetObjectCommand({
+//       Bucket: process.env.AWS_S3_BUCKET,
+//       Key: s3Key,
+//       Range: 'bytes=0-15'
+//     });
+
+//     const response = await s3.send(command);
+//     const chunks = [];
+//     for await (const chunk of response.Body) {
+//       chunks.push(chunk);
+//     }
+//     const headerBuffer = Buffer.concat(chunks);
+
+//     // Validate magic bytes
+//     const { valid, detectedType } = validateFileBuffer(headerBuffer);
+
+//     if (!valid || !isAllowedType(detectedType)) {
+//       // Delete invalid file from S3
+//       await s3.send(new DeleteObjectCommand({
+//         Bucket: process.env.AWS_S3_BUCKET,
+//         Key: s3Key
+//       }));
+
+//       await supabase
+//         .from('documents')
+//         .update({ status: 'failed', error_message: 'Invalid file content' })
+//         .eq('id', documentId);
+
+//       return res.status(400).json({ message: 'File content invalid. Upload rejected.' });
+//     }
+
+//     res.json({ message: 'Upload confirmed. Processing started.' });
+//     // errors here go to logs
+//     // processDocument(documentId, s3Key, detectedType, req.user.id)
+//     //   .catch(err => console.error('Background processing failed:', err));
+
+// //added
+//     await documentQueue.add('process-pdf', {
+//     documentId,
+//     s3Key,
+//     detectedType,
+//     userId: req.user.id
+//   }, {
+//     attempts: 3, // Retry automatically up to 3 times if AWS or Gemini fails
+//     backoff: 5000 // Wait 5s before retrying
+//   });
+
+//   // 2. Respond immediately to the frontend
+//   return res.json({ message: 'Document added to processing queue.' });
+//   } catch (err) {
+//     console.error('Error inside confirmUpload:', err);
+//     // Only send error if headers not already sent
+//     if (!res.headersSent) {
+//       res.status(500).json({ message: err.message });
+//     }
+//   }
+// };
+
+// module.exports = { requestUpload, confirmUpload };
 
 // const { generateUploadUrl } = require('../services/storageService');
 // const { validateFileBuffer, isAllowedType } = require('../utils/validateFile');
